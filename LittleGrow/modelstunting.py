@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # Load the preprocessed dataset
-preprocessed_csv_filename = 'preprocessed_stunted_growth_dataset.csv'
+preprocessed_csv_filename = 'dataset/preprocessed_stunted_growth_dataset.csv'
 df = pd.read_csv(preprocessed_csv_filename)
 
 # Split the data into features (X) and labels (y)
