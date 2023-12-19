@@ -1,35 +1,53 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
+
+app = FastAPI()
 
 # Load the preprocessed dataset
-preprocessed_csv_filename = 'preprocessed_stunted_growth_dataset.csv'
+preprocessed_csv_filename = 'stunted_growth_dataset.csv'
 df = pd.read_csv(preprocessed_csv_filename)
 
-# Split the data into features (X) and conditions (y)
-X = df.drop('condition', axis=1)
-y = df['condition']
-
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Split the data into features (X) and labels (y)
+X = df.drop('label', axis=1)
+y = df['label']
 
 # Scale numeric features (optional, depending on the algorithm)
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+X_scaled = scaler.fit_transform(X)
 
 # Train a Random Forest Classifier
 classifier = RandomForestClassifier(random_state=42)
-classifier.fit(X_train_scaled, y_train)
+classifier.fit(X_scaled, y)
 
-# Make predictions on the test set
-y_pred = classifier.predict(X_test_scaled)
+class Item(BaseModel):
+    features: list
 
-# Evaluate the model
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Accuracy: {accuracy:.2f}")
+@app.post("/predict")
+async def predict(item: Item):
+    try:
+        # Get input data from request
+        features = item.features
 
-classification_report_str = classification_report(y_test, y_pred, target_names=['stunted', 'normal'])
-print("Classification Report:\n", classification_report_str)
+        # Preprocess the input data
+        input_data = pd.DataFrame([features])
+        input_data_scaled = scaler.transform(input_data)
+
+        # Make predictions
+        prediction = classifier.predict(input_data_scaled)
+
+        # Convert the NumPy result to a regular Python type
+        prediction_result = prediction.item()
+
+        # Return the prediction as JSON
+        result = {'prediction': prediction_result}
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)
