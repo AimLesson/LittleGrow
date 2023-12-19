@@ -1,35 +1,60 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
 
-# Load the preprocessed augmented food dataset
-csv_filename = 'preprocessed_augmented_food_dataset.csv'
-food_df = pd.read_csv(csv_filename)
 
-# Display the first few rows of the dataset
-print("Preprocessed Augmented Food Dataset:")
-print(food_df.head())
+# Load the dataset
+df = pd.read_csv('stunted_growth_dataset.csv')
 
-# Separate features (X) and target variable (y)
-X = food_df.drop('price', axis=1)
-y = food_df['price']
+# Select relevant features and target variable
+X = df[['height', 'weight', 'head_circumference', 'arm_circumference', 'history_of_illness', 'birth_spacing']]
+y = df['food_label']
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-from sklearn.ensemble import RandomForestRegressor
+# Train the KNN model with the best hyperparameters
+best_k = 3  # Use the best_k value from your GridSearchCV
+knn_model = KNeighborsClassifier(n_neighbors=best_k)
+knn_model.fit(X_scaled, y)
 
-# Train a Random Forest Regressor model
-model = RandomForestRegressor(random_state=42)
-model.fit(X_train, y_train)
+app = FastAPI()
 
-# Make predictions on the test set
-y_pred = model.predict(X_test)
+class InputData(BaseModel):
+    height: float
+    weight: float
+    head_circumference: float
+    arm_circumference: float
+    history_of_illness: int
+    birth_spacing: int
 
-# Evaluate the model
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
+@app.post("/predictfood")
+def predict(data: InputData):
+    input_data = [[
+        data.height,
+        data.weight,
+        data.head_circumference,
+        data.arm_circumference,
+        data.history_of_illness,
+        data.birth_spacing
+    ]]
+    input_data_scaled = scaler.transform(input_data)
+    prediction_proba = knn_model.predict_proba(input_data_scaled)[0]
 
-print("\nRandom Forest Model Evaluation:")
-print(f"Mean Squared Error: {mse:.2f}")
-print(f"R^2 Score: {r2:.2f}")
+    # Get the top predicted classes and their probabilities
+    top_predictions = [
+        {"label": label, "probability": float(proba)}
+        for label, proba in zip(knn_model.classes_, prediction_proba)
+    ]
+    top_predictions.sort(key=lambda x: x["probability"], reverse=True)
+    top_4_predictions = top_predictions[:4]
+
+    return {"predictions": top_4_predictions}
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)

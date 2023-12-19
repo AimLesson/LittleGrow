@@ -1,41 +1,48 @@
 import pandas as pd
 import numpy as np
 
-# Sample food data with nutrition and price
-food_data = {
-    'food_item': ['Rice', 'Chicken', 'Vegetables', 'Fruits', 'Milk'],
-    'calories': [200, 250, 50, 80, 120],
-    'protein': [5, 30, 2, 1, 8],
-    'fat': [1, 10, 0.5, 0.3, 5],
-    'carbohydrates': [45, 0, 10, 20, 12],
-    'price': [2, 5, 3, 4, 3]
+# Sample data
+data = {
+    'food_item': ['Apple', 'Banana', 'Chicken Breast', 'Spinach', 'Salmon', 'Brown Rice', 'Greek Yogurt', 'Almonds', 'Broccoli', 'Lentils'],
+    'calories': [52, 105, 165, 23, 206, 215, 100, 7, 55, 230],
+    'protein': [0.3, 1.3, 31.0, 2.9, 22.0, 5.0, 10.0, 0.3, 3.7, 18.0],
+    'fat': [0.2, 0.3, 3.6, 0.4, 13.0, 1.6, 2.0, 0.6, 0.6, 1.0],
+    'carbohydrates': [14, 27, 0, 3.6, 0, 45, 3, 0.6, 11.2, 40],
+    'price': [1.0, 0.5, 3.0, 2.0, 5.0, 1.5, 1.8, 1.2, 2.5, 1.2],
+    'label': ['normal', 'stunted', 'normal', 'stunted', 'normal', 'stunted', 'normal', 'stunted', 'normal', 'stunted']
 }
 
-# Convert the data to a DataFrame
-food_df = pd.DataFrame(food_data)
+# Function for data augmentation
+def augment_data(df, num_samples=3000):
+    augmented_data = []
 
-# Number of augmented samples to generate
-num_samples = 1000
+    for _ in range(num_samples):
+        # Randomly select a row from the original data
+        original_row = df.iloc[np.random.randint(0, len(df))]
 
-# Generate augmented data for food
-augmented_food_data = []
+        # Create a new row with variations
+        new_row = original_row.copy()
 
-for _ in range(num_samples):
-    augmented_sample = {
-        'food_item': np.random.choice(food_df['food_item']),
-        'calories': np.random.uniform(0.8, 1.2) * np.random.choice(food_df['calories']),
-        'protein': np.random.uniform(0.8, 1.2) * np.random.choice(food_df['protein']),
-        'fat': np.random.uniform(0.8, 1.2) * np.random.choice(food_df['fat']),
-        'carbohydrates': np.random.uniform(0.8, 1.2) * np.random.choice(food_df['carbohydrates']),
-        'price': np.random.uniform(0.8, 1.2) * np.random.choice(food_df['price'])
-    }
-    augmented_food_data.append(augmented_sample)
+        # Random Scaling of Nutritional Values
+        scaling_factor = np.random.uniform(0.8, 1.2)
+        new_row[['calories', 'protein', 'fat', 'carbohydrates']] *= scaling_factor
 
-# Convert augmented data to a DataFrame
-augmented_food_df = pd.DataFrame(augmented_food_data)
+        # Random Price Fluctuations
+        new_row['price'] += np.random.uniform(0.1, 0.5)
 
-# Save the augmented food dataset as a CSV file
-csv_filename = 'augmented_food_dataset.csv'
-augmented_food_df.to_csv(csv_filename, index=False)
+        # Label Flipping
+        new_row['label'] = np.random.choice(['normal', 'stunted'])
 
-print(f"Augmented food dataset saved as {csv_filename}")
+        augmented_data.append(new_row)
+
+    augmented_df = pd.DataFrame(augmented_data)
+    return augmented_df
+
+# Augment the data with 1000 samples
+augmented_df = augment_data(pd.DataFrame(data), num_samples=3000)
+
+# Save the augmented data to a CSV file
+augmented_df.to_csv('augmented_food_data.csv', index=False)
+
+# Display the first few rows of the augmented data
+print(augmented_df.head())
