@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Load the preprocessed augmented food dataset
-csv_filename = 'dataset/preprocessed_augmented_food_dataset.csv'
+csv_filename = 'preprocessed_augmented_food_dataset.csv'
 food_df = pd.read_csv(csv_filename)
 
 # Display the first few rows of the dataset
