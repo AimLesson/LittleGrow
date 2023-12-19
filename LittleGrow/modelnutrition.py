@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 # Load the dataset
-df = pd.read_csv('stunted_growth_dataset.csv')
+df = pd.read_csv('stunted_growth_dataset(food).csv')
 
 # Select relevant features and target variable
 X = df[['height', 'weight', 'head_circumference', 'arm_circumference', 'history_of_illness', 'birth_spacing']]
